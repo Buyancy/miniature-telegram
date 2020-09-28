@@ -52,11 +52,23 @@ let rec print_sequence_list l = match l with
     | c::l -> print_sequence c; print_sequence_list l
 ;;
 
+(* A function that will calculate and return the complementary DNA sequence. *)
+let complement s = 
+    let c n = match n with 
+        | A -> T
+        | T -> A
+        | C -> G
+        | G -> C
+        | _ -> B
+    in List.map c s
+;;
+
+
 (* A function that will score how well matched two sequences are. *)
 let score_alignment (s, t) = 
     let break_cost = -2 in 
     let transition_cost = -1 in 
-    let transversion_cost = -2 in
+    let transversion_cost = -2 in 
     let alignment_score = 1 in 
     let rec sa n s' t' = match (s', t') with 
         | ([], _) | (_, [])    -> n
