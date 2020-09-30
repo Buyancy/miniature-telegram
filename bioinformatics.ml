@@ -4,6 +4,9 @@ open ANSITerminal
 (* The alphabet that we will be using for DNA sequences (B is a blank space.) *)
 type nucleotide = A | C | G | T | B
 
+(* The data structure we will use to represent a phylogenertic tree. *)
+type phylogeneticTree = Species of string | Ancestor of phylogeneticTree * phylogeneticTree
+
 (* A function that will generate a sequence from a string of characters. *)
 let generate_sequence str = 
     let str = String.lowercase_ascii str in 
@@ -134,8 +137,12 @@ let align_dfs (s, t) =
     mat (s, t)
 ;;
 
+(* A function that will use the Needleman–Wunsch algorithm to align two DNA sequences. *)
+(* NOT IMPLEMENTED YET. *)
+let needleman_wunsch (s, t) m = 0
+
 (* A function that will generate a random DNA sequence of length n. *)
-let generate_random_sequence n = 
+let generate_random_sequence n =  
     let rec r n' s = 
         if n' = 0 then s
         else (
@@ -148,3 +155,40 @@ let generate_random_sequence n =
     in 
     r n []
 ;;
+
+(* A function that will take in a list of names and return a phylogenetic tree. *)
+(* Returns a "left leaning" tree in the same order as the names are given. *)
+(* This is a temporary implementation used for developing the phylogenetic tree functionality. *)
+let generate_tree names = 
+    let rec comp l acc = match l with 
+        | []     -> acc
+        | (h::t) -> (
+            match acc with 
+                | None    -> (comp t (Some (Species h)))
+                | Some(a) -> (comp t (Some(Ancestor (a, Species h))))
+        )
+    in
+    comp names None
+;;
+
+(* Generate a dot string for a tree. *)
+let get_tree_dot tree = 
+    let add_line orig line = String.concat "\n" [orig; line] in 
+    let rec gen t acc = match t with 
+        | Species(x)     -> add_line acc (String.concat "" [string_of_int (Hashtbl.hash t); " [label="; x; "]"]) 
+        | Ancestor(a, b) -> begin 
+            let tmp = add_line acc (String.concat "" [string_of_int (Hashtbl.hash t); " -- "; string_of_int (Hashtbl.hash a)]) in 
+            let tmp = add_line tmp (String.concat "" [string_of_int (Hashtbl.hash t); " [label=\"Common Ancestor\"]"]) in
+            let ac1 = gen a tmp in 
+            let ac2 = add_line ac1 (String.concat "" [string_of_int (Hashtbl.hash t); " -- "; string_of_int (Hashtbl.hash b)]) in 
+            gen b ac2; 
+        end
+    in 
+    gen tree ""
+
+(* Save the tree as a rendered png file. *)
+let save_tree_image tree = 
+    let oc = open_out "tmp.dot" in 
+    fprintf oc "graph PhylogeneticTree{\n %s \n}" (get_tree_dot tree);
+    close_out oc;
+    Sys.command "dot -Tpng tmp.dot -o phylogeneticTree.png; rm tmp.dot";
